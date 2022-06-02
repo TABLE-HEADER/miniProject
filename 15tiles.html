@@ -95,7 +95,7 @@
 					
 				}
 				
-				// 	テーブルサイズの変更
+				// テーブルサイズの変更
 				function recreate_table(n){
 					size = n;
 					
@@ -122,6 +122,7 @@
 					blank_td.text("");
 					blank_td.attr("id","blank");
 					
+					// ボタンリセット
 					$('#timer').html('00:00:00');
 					clearInterval(timer);
 					start_flag = false;
@@ -264,6 +265,71 @@
 					}
 						
 				});
+				
+				// タイルのクリック判定
+				$(document).on('click', '#tiles td', function(e){
+				
+					if(start_flag == true) {
+				
+						var td = null, tr;
+						var td_bool = false;
+						tr = $("td",$(this).parent().next());
+						// up
+						if(tr != null){
+							td = tr.eq($(this).index());
+							if(td.attr('id') == 'blank'){
+								td_bool = true;
+							}
+						}
+						
+						// down
+						tr = $("td",$(this).parent().prev());
+						if(tr != null){
+							td = tr.eq($(this).index());
+							if(td.attr('id') == 'blank'){
+								td_bool = true;
+							}
+						}
+						
+						// right
+						td = $(this).next();
+						if(td.attr('id') == 'blank'){
+							td_bool = true;
+						}
+						
+						// left
+						td = $(this).prev();
+						if(td.attr('id') == 'blank'){
+							td_bool = true;
+						}
+						if(td_bool == true) {
+							$("#blank").text($(this).text());
+							$("#blank").removeAttr("id");
+							$(this).text("");
+							$(this).attr("id","blank");
+							
+							var count = 0;
+							loop: for(var i = 0; i < size; i++){
+								for(var j = 0; j < size; j++){
+									if($("#tiles tr").eq(i).children('td').eq(j).text() != i * size + j + 1) {
+										break loop;
+									}
+									count++;
+								}
+							}
+							if(count == size * size - 1) {
+								$("#message").html("<font size='4' color='red'>🎉Congratulations!!🎉</font><br>");
+								clearInterval(timer);
+								$('#stop').prop('disabled', true);
+								$('#size').prop('disabled', false);
+								start_flag = false;
+							}
+						}
+						
+					}
+						
+				});
+				
 			});
 		</script>
 		<style>
