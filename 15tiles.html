@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html">
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>15tiles</title>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+		<script>
+		
+			$(function() {
+			
+				// 列数
+				var size = 4;
+				
+				// タイマー用変数
+				var sec = 0;
+				var min = 0;
+				var hour = 0;
+
+				var timer;
+				
+				var start_flag = false;
+				
+				function reset_conf() {
+				
+					// blankの位置を決定
+					var blank_row = Math.floor(Math.random() * size);
+					var blank_column = Math.floor(Math.random() * size);
+					
+					/*
+					// テスト用
+					var blank_row = 3;
+					var blank_column = 2;
+					*/
+					
+					// blankの初期位置とのマンハッタン距離の偶奇判定:偶数ならtrue
+					// size=4なら、columnの偶奇の逆が横の移動距離の偶奇(偶数なら0)、rowの偶奇の逆が縦の移動距離の偶奇(偶数なら0)なので
+					// (((blank_row + 1) % 2) + ((blank_column + 1) % 2)) % 2 = ((blank_row % 2) + (blank_column % 2)) % 2 で判定
+					// size=nの場合も同様にできる
+					var blank_bool = ((blank_row % 2) + (blank_column % 2)) % 2 == 0;
+					
+					var td_swap = $("#tiles tr").eq(blank_row).children('td').eq(blank_column);
+					$("#blank").text(td_swap.text());
+					$("#blank").removeAttr("id");
+					td_swap.text("");
+					td_swap.attr("id","blank");
+					
+					// 穴が初期位置なら、blank_boolの真理値入れ替え
+					if(blank_row != size - 1 || blank_column != size - 1){
+						blank_bool = !blank_bool;
+					}
+					
+					// trueなら偶数、falseなら奇数(最低値size*2+1)のswap回数の設定
+					var num = ((Math.floor(Math.random() * size * size) + parseInt(size)) * 2) + 1 + blank_bool;
+					// num回のswap
+					var r1, r2, c1, c2;
+					var td1, td2;
+					var val_temp;
+
+					while(true) {
+					
+						for(var i = 0; i < num; i++) {
+							while(true){
+								r1 = Math.floor(Math.random() * size);
+								r2 = Math.floor(Math.random() * size);
+								c1 = Math.floor(Math.random() * size);
+								c2 = Math.floor(Math.random() * size);
+								if((r1 != r2 || c1 != c2) && (r1 != blank_row || c1 != blank_column) && (r2 != blank_row || c2 != blank_column)) {
+									td1 = $("#tiles tr").eq(r1).children('td').eq(c1);
+									td2 = $("#tiles tr").eq(r2).children('td').eq(c2);
+									val_temp = td1.text();
+									td1.text(td2.text());
+									td2.text(val_temp);
+									break;
+								}
+							}
+						}
+						
+						// 初手盤面と同じではないかどうかだけチェック
+						var count = 0;
+						loop: for(var i = 0; i < size; i++){
+							for(var j = 0; j < size; j++){
+								if($("#tiles tr").eq(i).children('td').eq(j).text() != i * size + j + 1) {
+									break loop;
+								}
+								count++;
+							}
+						}
+						if(count != size * size - 1) {
+							break;
+						}
+						
+					}
+					
+				}
+				
+				// 	テーブルサイズの変更
+				function recreate_table(n){
+					size = n;
+					
+					// 入力値チェック
+					if(size < 0){
+						size = 2;
+					}
+					else if(size > 10){
+						size = 10;
+					}
+					
+					$("#tiles tr").remove("");
+					var tr_text = "";
+					var td_size = 100 - (size * 6);
+					for(var i = 0; i < size; i++){
+						tr_text += "<tr>"
+						for(var j = 0; j < size; j++){
+							tr_text += "<td style='width: " + td_size + "px; height: " + td_size + "px;'>" + (i * size + j + 1) + "</td>";
+						}
+						tr_text += "</tr>"
+					}
+					$("#tiles").append(tr_text);
+					var blank_td = $("#tiles tr").eq(size - 1).children('td').eq(size - 1);
+					blank_td.text("");
+					blank_td.attr("id","blank");
+					
+					$('#timer').html('00:00:00');
+					clearInterval(timer);
+					start_flag = false;
+					$('#stop').prop('disabled', true);
+					$('#restart').text('開始');
+					$('#size').prop('disabled', false);
+					$('#restart').prop('disabled', false);
+					$('#restart').attr('id', 'start');
+					$("#message").html("");
+					
+					reset_conf();
+				}
+				
+				recreate_table(size);
+				
+				$(document).on('input', '#size', function(e) {
+					recreate_table($("#size").val());
+				});
+				
+				// スタート
+				$(document).on('click', '#start', function() {
+					// 00:00:00から開始
+					sec = 0;
+					min = 0;
+					hour = 0;
+					$('#timer').html('00:00:00');
+					timer = setInterval(countup, 1000);
+					start_flag = true;
+
+					$(this).text('再開');
+					$(this).attr('id', 'restart');
+					$(this).prop('disabled', true);
+					$('#size').prop('disabled', true);
+					$('#stop,#reset').prop('disabled', false);
+				});
+				
+				// ストップ
+				$(document).on('click', '#stop', function() {
+					// 一時停止
+					clearInterval(timer);
+					start_flag = false;
+
+					$(this).prop('disabled', true);
+					$('#restart').prop('disabled', false);
+				});
+
+				// リスタート
+				$(document).on('click', '#restart', function() {
+					// 一時停止から再開
+					timer = setInterval(countup, 1000);
+					start_flag = true;
+
+					$(this).prop('disabled', true);
+					$('#size').prop('disabled', true);
+					$('#stop').prop('disabled', false);
+				});
+
+				// リセット
+				$(document).on('click', '#reset', function() {
+					// 初期状態
+					sec = 0;
+					min = 0;
+					hour = 0;
+					recreate_table(size);
+				});
+				
+				// タイマーの経過
+				function countup() {
+					sec += 1;
+
+					if(sec > 59) {
+						sec = 0;
+						min += 1;
+					}
+
+					if(min > 59) {
+						min = 0;
+						hour += 1;
+					}
+
+					// 0埋め
+					sec_number = ('0' + sec).slice(-2);
+					min_number = ('0' + min).slice(-2);
+					hour_number = ('0' + hour).slice(-2);
+
+					$('#timer').html(hour_number + ':' + min_number + ':' + sec_number);
+				}
+				
+				// キー判定
+				$(document).on('keydown', function(e){
+				
+					if(start_flag == true) {
+				
+						var td = null, tr;
+						switch(e.key) {
+							case 'ArrowUp':
+								tr = $("td",$("#blank").parent().next());
+								if(tr != null){
+									td = tr.eq($("#blank").index());
+									break;
+								}
+							case 'ArrowDown':
+								tr = $("td",$("#blank").parent().prev());
+								if(tr != null){
+									td = tr.eq($("#blank").index());
+									break;
+								}
+								break;
+							case 'ArrowLeft':
+								td = $("#blank").next();
+								break;
+							case 'ArrowRight':
+								td = $("#blank").prev();
+								break;
+						}
+						if(td != null && td.html() !== undefined) {
+							$("#blank").text(td.text());
+							$("#blank").removeAttr("id");
+							td.text("");
+							td.attr("id","blank");
+							
+							var count = 0;
+							loop: for(var i = 0; i < size; i++){
+								for(var j = 0; j < size; j++){
+									if($("#tiles tr").eq(i).children('td').eq(j).text() != i * size + j + 1) {
+										break loop;
+									}
+									count++;
+								}
+							}
+							if(count == size * size - 1) {
+								$("#message").html("<font size='4' color='red'>🎉Congratulations!!🎉</font><br>");
+								clearInterval(timer);
+								$('#stop').prop('disabled', true);
+								$('#size').prop('disabled', false);
+								start_flag = false;
+							}
+						}
+						
+					}
+						
+				});
+			});
+		</script>
+		<style>
+		table {
+			border: 6px double black;
+			position:	absolute;
+			height:		1.2rem;
+			top:		0;
+			bottom:		0;
+			left:		0;
+			right:		0;
+			margin:		auto;
+		}
+		td {
+			text-align: center;
+			width: 48px;
+			height: 48px;
+		}
+		td:not(#blank) {
+			background-color:	#FFCC99;
+			border: 2px solid black;
+		}
+		td#blank {
+			background-color: none;
+			border: 0;
+		}
+		#message {
+			bottom:	100%;
+		}
+		</style>
+	</head>
+	<body>
+		
+		<table id="tiles">
+			<caption>
+				<span id="message"></span>
+				<span id="timer">00:00:00</span>
+				<br>
+				<button id="start">開始</button>
+				<button id="stop" disabled>一時停止</button>
+				<button id="reset">リセット</button>
+				<br>サイズ：<input type="number" id="size" value="4" min="2" max="10" step="1">
+			</caption>
+		</table>
+		
+	</body>
+</html>
