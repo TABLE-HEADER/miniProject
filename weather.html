@@ -1,0 +1,123 @@
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Viewer</title>
+		<style type="text/css">
+		table {
+			border: 2px solid black;
+			text-align:	center;
+			position:	absolute;
+			height:		1.2rem;
+			top:		0;
+			bottom:		0;
+			left:		0;
+			right:		0;
+			margin:		auto;
+		}
+		</style>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+		<script type="text/javascript">
+
+		function displayWeather(json) {
+
+			$("#weather tr").remove();
+
+			// 日付
+			var tr_text = "<tr>";
+			for(var i = 0; i < 7; i++) {
+				var day = json.daily.time[i];
+				var dow = ["日", "月", "火", "水", "木", "金", "土"][new Date(day).getDay()];
+				tr_text += "<td>" + day.substring(5).replace("-", "\/").replace(/0([0-9])/, "$1") + "(" + dow + ")</td>";
+			}
+			tr_text += "</tr>";
+
+			// 天気
+			tr_text += "<tr>";
+			for(var i = 0; i < 7; i++) {
+				tr_text += "<td>";
+				w = json.daily.weathercode[i];
+				if(w <= 2) {
+					tr_text += "🌞";
+				}
+				else if(w == 3) {
+					tr_text += "⛅";
+				}
+				else if(w >= 70 && w <= 79) {
+					tr_text += "❄";
+				}
+				/*
+				else if(w >= 93) {
+					tr_text += "⚡";
+				}
+				*/
+				else {
+					tr_text += "☔";
+				}
+				tr_text += "</td>";
+			}
+			tr_text += "</tr>";
+
+			// 最高・最低気温
+			tr_text += "<tr>";
+			for(var i = 0; i < 7; i++) {
+				tr_text += "<td><font color='red'>" + json.daily.temperature_2m_max[i].toFixed(1) + "</font></td>";
+			}
+			tr_text += "</tr>";
+			tr_text += "<tr>";
+			for(var i = 0; i < 7; i++) {
+				tr_text += "<td><font color='blue'>" + json.daily.temperature_2m_min[i].toFixed(1) + "</font></td>";
+			}
+			tr_text += "</tr>";
+
+			$("#weather").append(tr_text);
+		}
+
+		function getWeather(coordinate) {
+			const url = 'https://api.open-meteo.com/v1/forecast?' + coordinate + '&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo';
+			fetch(url)
+				.then(data => data.json())
+				.then(json => displayWeather(json));
+		}
+
+		$(window).on('load', function(){
+			getWeather("latitude=35.6785&longitude=139.6823");
+		});
+
+		$(function(){
+
+			$("#city").on('change', function(){
+				getWeather($(this).val());
+			});
+
+		});
+
+		</script>
+	</head>
+	<body>
+
+		<table id="weather" border="1">
+			<caption>
+				<select id="city">
+					<option value="latitude=35.6785&longitude=139.6823">日本（東京）</option>
+					<option value="latitude=51.5002&longitude=-0.1262">イギリス（ロンドン）</option>
+					<option value="latitude=41.8955&longitude=12.4823">イタリア（ローマ）</option>
+					<option value="latitude=52.5235&longitude=13.4115">ドイツ（ベルリン）</option>
+					<option value="latitude=48.8567&longitude=2.3510">フランス（パリ）</option>
+					<option value="latitude=55.7558&longitude=37.6176">ロシア（モスクワ）</option>
+					<option value="latitude=40.71&longitude=-74.01">アメリカ（ニューヨーク）</option>
+					<option value="latitude=34.05&longitude=-118.24">アメリカ（ロサンゼルス）</option>
+					<option value="latitude=-15.7801&longitude=-47.9292">ブラジル（ブラジリア）</option>
+					<option value="latitude=39.9056&longitude=116.3958">中国（北京）</option>
+					<option value="latitude=37.5139&longitude=126.9828">韓国（ソウル）</option>
+					<option value="latitude=1.2894&longitude=103.8500">シンガポール（シンガポール）</option>
+					<option value="latitude=39.9439&longitude=32.8560">トルコ（アンカラ）</option>
+					<option value="latitude=30.0571&longitude=31.2272">エジプト（カイロ）</option>
+					<option value="latitude=-1.2762&longitude=36.7965">ケニア（ナイロビ）</option>
+					<option value="latitude=-35.2820&longitude=149.1286">オーストラリア（キャンベラ）</option>
+				</select>
+				の天気<br>&nbsp;
+			</caption>
+		</table>
+
+	</body>
+</html>
